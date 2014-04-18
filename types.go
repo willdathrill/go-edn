@@ -6,7 +6,7 @@ import (
 )
 
 type Eq interface {
-	func Equal(other interface{}) bool
+	Equal(other interface{}) bool
 }
 
 type Metaer interface {
@@ -23,37 +23,45 @@ type Named interface {
 type Symbol struct {
 	ns, name string
 	meta *PMap
-	hash int
-	_str string
+	//hash int
+	_str string // for caching the value of 
 }
 
 func NewSym(ns, name string) Symbol {
-	return Symbol{ns:ns, name:name}
+	var str string
+	if ns != "" {
+		str = ns+"/"+name
+	}else{
+		str = name
+	}
+	return Symbol{
+		ns:		ns, 
+		name:	name,
+		_str:		str	
+	}
 }
 
 func (sym Symobl) String() string {
-	if sym._str == "" {
-		if sym.ns != "" {
-			sym._str = sym.ns + sym.name
-		}else{
-			sym._str = sym.name
-		}
-	}
 	return sym._str
 }
 
 func (sym Symbol) Equal(other interface{}) bool {
+	// if other isn't a symbol, it (obviously) can't be equal
 	so, ok := other.(Symbol)
-	return ok && so.name == sym.name && so.ns == sym.ns
+	return ok && so.Name() == sym.name && so.Ns() == sym.ns
 }
 
 func (sym Symbol) WithMeta(m *PMap) Meta {
 	return Symbol{ns:ns, name:name, meta:m}
 }
 
+// some accessors, to fill out interfaces above
 func (sym Symbol) Meta() *PMap { return sym.meta }
 func (sym Symbol) Name() string { return sym.name }
 func (sym Symbol) Ns() string { return sym.ns }
 
+// todo: implement immutable mappings
+// maybe with https://github.com/steveyen/gtreap
+type PMap struct{}
 
 
