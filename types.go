@@ -3,15 +3,11 @@ package edn
 import (
 	//"regexp"
 	//"strings"
+	"sync"
 )
 
 type Eq interface {
 	Equal(other interface{}) bool
-}
-
-type Metaer interface {
-	WithMeta(*PMap) Meta
-	Meta() *PMap
 }
 
 type Named interface {
@@ -19,11 +15,13 @@ type Named interface {
 	Name() string
 }
 
+type Hasher interface {
+	Hash() int32
+}
 
 type Symbol struct {
 	ns, name string
-	meta *PMap
-	//hash int
+	hash int
 	_str string // for caching the value of 
 }
 
@@ -34,31 +32,48 @@ func NewSym(ns, name string) Symbol {
 	}else{
 		str = name
 	}
-	return Symbol{
+	return Symbol{ //todo: implement hashing
 		ns:		ns, 
 		name:	name,
 		_str:		str	
 	}
 }
 
-func (sym Symobl) String() string {
-	return sym._str
-}
+func (sym Symobl) String() string { return sym._str }
+func (sym Symbol) Name() string { return sym.name }
+func (sym Symbol) Ns() string { return sym.ns }
 
 func (sym Symbol) Equal(other interface{}) bool {
-	// if other isn't a symbol, it (obviously) can't be equal
 	so, ok := other.(Symbol)
 	return ok && so.Name() == sym.name && so.Ns() == sym.ns
 }
 
-func (sym Symbol) WithMeta(m *PMap) Meta {
-	return Symbol{ns:ns, name:name, meta:m}
+// Keyword implementation
+var (
+	keyTable = make(map[Symbol]*Keyword) //cache of Keywords
+	keyLock sync.Mutex // lock ^
+)
+
+type Keyword struct {
+	Symbol
+	hash int
+	_str string
 }
 
-// some accessors, to fill out interfaces above
-func (sym Symbol) Meta() *PMap { return sym.meta }
-func (sym Symbol) Name() string { return sym.name }
-func (sym Symbol) Ns() string { return sym.ns }
+func NewKwd(ns, name string) *Keyword {
+	keyLock.Lock()
+	defer keyLock.Unlock()
+	sym := NewSym(ns,name)
+	k, ok := keyTable[sym]
+	if !ok { // todo: implement hashing
+		k = &Keyword{Symbol:sym,_str:":"+sym.String()}
+	}
+	return k
+}
+
+func (k *Keyword) String() string { return k._str }
+func (k *Keyword) Name() string { return k.Name() }
+
 
 // todo: implement immutable mappings
 // maybe with https://github.com/steveyen/gtreap
