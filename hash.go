@@ -7,12 +7,13 @@ import (
 	r "reflect"
 )
 
-func 
-
+// this function is only for scalar values:
+// not arrays, slices, pointers, chans, maps, or structs
+// however, string, and []byte are accepted
 func hashScalar(in interface{}) int32 {
 	if in == nil { return 0 }
 	var to []byte
-	switch i := r.TypeOf(in).Kind() {
+	switch i :=in {
 	case byte, uint8, int8:
 		to = []byte{byte(i)}
 	case uint16, int16:
@@ -32,7 +33,7 @@ func hashScalar(in interface{}) int32 {
 	case float64:
 		to = toBytes(math.Float64bits(i))
 	case complex64, complex128:
-		re, im := real(i), imag(in)
+		re, im := real(i), imag(i)
 		to = append(toBytes(re),toBytes(im)...)
 	case []byte:
 		to = i

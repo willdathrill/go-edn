@@ -1,8 +1,7 @@
 package edn
 
 import (
-	//"regexp"
-	//"strings"
+	"reflect"
 	"sync"
 )
 
@@ -17,6 +16,34 @@ type Named interface {
 
 type Hasher interface {
 	Hash() int32
+	Hasheq(other Hasher) bool
+}
+
+type Counted interface {
+	Count() int
+}
+
+type Seq interface {
+	First() interface{}
+	Next() Seq
+	More() Seq
+	Cons(interface{}) Seq
+}
+
+type Stack interface {
+	Peek() interface{}
+	Pop() Stack
+}
+
+type List interface {
+	Seq
+	Eq
+	Stack
+	Contains(o interface{}) bool
+	//ContainsAll need to work out signature
+	Index(o interface{}) int
+	LastIndex(o interface{}) int
+	EmptyP() bool
 }
 
 type Symbol struct {
@@ -72,11 +99,68 @@ func NewKwd(ns, name string) *Keyword {
 }
 
 func (k *Keyword) String() string { return k._str }
-func (k *Keyword) Name() string { return k.Name() }
+func (k *Keyword) Equal(other interface{}) bool {
+	ko, ok := other.(*Keyword)
+	return ok && ko == k
+	// reference equality deliberate: cached in keyTable
+}
 
+// Persistent List
 
-// todo: implement immutable mappings
-// maybe with https://github.com/steveyen/gtreap
-type PMap struct{}
+type PList struct {
+	first interface{}
+	next *PList
+	count int
+}
 
+func NewList1(fst interface{}) *PList {
+	return &PList{first: fst, next: nil, count: 1}
+}
 
+func NewList(fst interface{}, rst *PList, count int) *PList {
+	return &PList{first: fst, rest: rst, count: count}
+}
+
+var emptyList = NewList(nil,nil,0)
+
+func (p *PList) Count() int {
+	return p.count
+}
+
+func (p *PList) FIrst() interface{} {
+	return p.first
+}
+
+func (p *PList) Next() Seq {
+	if p.Count() == 1 { return nil }
+	return p.next
+}
+
+func (p *PList) More() Seq {
+	s := p.Next()
+	if s == nil { s = emptyList }
+	return s
+}
+
+func (p *PList) Cons(o interface{}) Seq {
+	return NewList(o, p, p.count+1)
+}
+
+func (p *PList) Peek() interface{} { return p.first }
+
+func (p *PList) Pop() Stack {
+	if p.rest == nil {
+		return emptyList
+	}
+	return p.rest
+}
+
+func (p *PList) Empty() *PList { return emptyList }
+
+func (p *PList) EmptyP() bool {
+	return p.first == nil && p.next == nil
+}
+
+func (p *PList) reify() []interface{} {
+	np := p
+	ret := make(
