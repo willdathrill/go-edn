@@ -37,13 +37,16 @@ type Stack interface {
 
 type List interface {
 	Seq
-	Eq
+	// todo: formalize equality
+	//Eq
 	Stack
 	Contains(o interface{}) bool
-	//ContainsAll need to work out signature
-	Index(o interface{}) int
-	LastIndex(o interface{}) int
+	// todo: work out func signature, maybe Coll inter?
+	//ContainsAll
+	Index(interface{}) (int, bool)
+	LastIndex(interface{}) (int, bool)
 	EmptyP() bool
+	SubList(int, int) List
 }
 
 type Symbol struct {
@@ -132,7 +135,7 @@ func (p *PList) FIrst() interface{} {
 }
 
 func (p *PList) Next() Seq {
-	if p.Count() == 1 { return nil }
+	if p.count == 1 { return nil }
 	return p.next
 }
 
@@ -163,4 +166,57 @@ func (p *PList) EmptyP() bool {
 
 func (p *PList) reify() []interface{} {
 	np := p
-	ret := make(
+	ret := make([]interface{}, np.count)
+	for i := range ret {
+		ret[i] = np.first
+		np = np,Next()
+		if np == nil {
+			break
+		}
+	}
+	return ret
+}
+
+func sliceToList(all ...interface{}) *PList {
+	p := emptyList
+	for _,v := range all {
+		p = p.Cons(v)
+	}
+	return p
+}
+
+func (p *PList) SubList(from, to int) List {
+	return sliceToList(p.reify()[from:to]...)
+}
+
+func (p *PList) Index(o interface{}) (int, bool) {
+	np := p
+	for i := 0; np != nil; i++ {
+		// todo: *might* need to fix this to enable nesting
+		if reflect.DeepEqual(np.first, o) {
+			return i, true
+		}
+		np := np.Next()
+	}
+	return -1, false // <-- indicating not found
+}
+
+func (p *PList) LastIndex(o interface{}) (int, bool) {
+	r := p.reify()
+	for i := len(r); i > 0; i-- {
+		// todo: ref Index ^
+		if reflect.DeepEqual(r[i], o) {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+func (p *PList) Contains(o interface{}) bool {
+	for np := p; np != nil; np = np.Next() {
+		if reflect.DeepEqual(np.First(), o) {
+			return true
+		}
+	}
+	return false
+}
