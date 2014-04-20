@@ -97,6 +97,7 @@ func NewKwd(ns, name string) *Keyword {
 	k, ok := keyTable[sym]
 	if !ok { // todo: implement hashing
 		k = &Keyword{Symbol:sym,_str:":"+sym.String()}
+		keyTable[sym] = k
 	}
 	return k
 }
@@ -169,7 +170,7 @@ func (p *PList) reify() []interface{} {
 	ret := make([]interface{}, np.count)
 	for i := range ret {
 		ret[i] = np.first
-		np = np,Next()
+		np = np.Next()
 		if np == nil {
 			break
 		}
