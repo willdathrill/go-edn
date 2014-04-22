@@ -125,7 +125,7 @@ func NewList(fst interface{}, rst *PList, count int) *PList {
 	return &PList{first: fst, rest: rst, count: count}
 }
 
-var emptyList = NewList(nil,nil,0)
+var emptyList = 
 
 func (p *PList) Count() int {
 	return p.count
@@ -142,7 +142,7 @@ func (p *PList) Next() Seq {
 
 func (p *PList) More() Seq {
 	s := p.Next()
-	if s == nil { s = emptyList }
+	if s == nil { s = NewList(nil,nil,0) }
 	return s
 }
 
@@ -154,12 +154,12 @@ func (p *PList) Peek() interface{} { return p.first }
 
 func (p *PList) Pop() Stack {
 	if p.rest == nil {
-		return emptyList
+		return NewList(nil,nil,0)
 	}
 	return p.rest
 }
 
-func (p *PList) Empty() *PList { return emptyList }
+func (p *PList) Empty() *PList { return NewList(nil,nil,0) }
 
 func (p *PList) EmptyP() bool {
 	return p.first == nil && p.next == nil
@@ -169,7 +169,7 @@ func (p *PList) reify() []interface{} {
 	np := p
 	ret := make([]interface{}, np.count)
 	for i := range ret {
-		ret[i] = np.first
+		ret[i] = np.First()
 		np = np.Next()
 		if np == nil {
 			break
@@ -221,3 +221,23 @@ func (p *PList) Contains(o interface{}) bool {
 	}
 	return false
 }
+
+// Vector implementation
+/* todo: how do we ensure transients aren't edited after
+	call to persistent?
+type vecNode struct{
+	sema chan struct{}
+	arr []interface{}
+}
+
+type tVec struct {
+	cnt uint
+	shift int
+	root vecNode
+	tail []interface{}
+}
+
+func (t *tVec) Count() int {
+	return int(t.cnt)
+}
+*/
